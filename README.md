@@ -1,6 +1,6 @@
-# LangGraph Workflow Implementation
+# LangGraph + Ollama AI Workflow Implementation
 
-This project implements a simple workflow using LangGraph, demonstrating the core concepts of state management, node processing, and conditional routing discovered through parallel search research.
+This project implements an AI-powered workflow using LangGraph with Ollama integration, featuring real-time search capabilities and intelligent response generation using the gpt-oss:20b model.
 
 ## 🔍 Research Background
 
@@ -16,11 +16,14 @@ This implementation is based on comprehensive parallel search research conducted
 
 ## 📋 Features
 
+- **AI Integration**: Ollama gpt-oss:20b model integration for intelligent responses
+- **Real-time Search**: `psearch` integration with live progress visualization
 - **State Management**: Type-safe state handling with TypedDict
-- **Node Processing**: Input processing, decision making, and continuation logic  
+- **Node Processing**: Input, search, processing, decision making, and continuation logic
 - **Conditional Routing**: Dynamic workflow routing based on iteration count
-- **Message History**: Conversation-style message tracking
-- **Simple Loop**: Iterative processing with configurable termination
+- **Message History**: Conversation-style message tracking with AI responses
+- **Progress Visualization**: Real-time display of search progress and results
+- **Japanese Language Support**: Native Japanese response generation
 
 ## 🚀 Getting Started
 
@@ -28,6 +31,9 @@ This implementation is based on comprehensive parallel search research conducted
 
 - Python 3.12+
 - uv package manager
+- Ollama installed and running (`ollama serve`)
+- gpt-oss:20b model installed (`ollama pull gpt-oss:20b`)
+- `psearch` command available for search functionality
 
 ### Installation
 
@@ -49,28 +55,50 @@ uv pip install -r requirements.txt
 
 ### Running the Workflow
 
-Execute the simple workflow example:
-
+1. Start Ollama server:
 ```bash
-python simple_workflow.py
+ollama serve
+```
+
+2. Ensure gpt-oss:20b model is available:
+```bash
+ollama pull gpt-oss:20b
+```
+
+3. Execute the AI workflow:
+```bash
+python ollama_workflow.py
 ```
 
 Expected output:
 ```
-🚀 Starting LangGraph Workflow Implementation
-==================================================
+🚀 Starting LangGraph Workflow with Ollama gpt-oss:20b
+============================================================
+🔍 Checking Ollama connection...
+✅ Ollama is running with X models
+✅ gpt-oss:20b model is available
+
+💬 Please enter your question:
+❓ [Your question here]
+
 📋 Initial State:
-  User Input: Hello, please process this LangGraph workflow example
+  User Input: [Your question]
   Iteration: 0
 
-⚡ Executing Workflow...
-------------------------------
-✅ Workflow Completed!
-==================================================
-📊 Final Results:
-  Total Iterations: 3
-  Final Output: Processing iteration 3: Continue processing from iteration 2
-  Message Count: 8
+⚡ Executing Workflow with Ollama...
+----------------------------------------
+🔍 Searching for information about: [Your question]
+📊 Progress visualization:
+----------------------------------------
+📤 [Real-time psearch output...]
+📤 [Search progress...]
+----------------------------------------
+✅ Search completed successfully
+📄 Found X results
+
+🤖 Processing iteration 1 with Ollama gpt-oss:20b...
+✅ LLM Full Response:
+[AI-generated Japanese response based on search results]
 ```
 
 ## 📐 Architecture
@@ -78,19 +106,21 @@ Expected output:
 ### Workflow Nodes
 
 1. **Input Node**: Processes user input and manages message history
-2. **Processing Node**: Generates responses and updates conversation state
-3. **Decision Node**: Determines whether to continue or terminate workflow
-4. **Continuation Node**: Prepares state for next iteration
+2. **Search Node**: Executes `psearch` with real-time progress visualization
+3. **Processing Node**: Uses Ollama gpt-oss:20b to generate AI responses with search context
+4. **Decision Node**: Determines whether to continue or terminate workflow
+5. **Continuation Node**: Prepares state for next iteration
 
 ### State Structure
 
 ```python
 class WorkflowState(TypedDict):
-    messages: list[BaseMessage]      # Conversation history
+    messages: list[BaseMessage]      # Conversation history with AI responses
     iteration: int                   # Current iteration count
     user_input: str                 # Current user input
-    processed_output: str           # Latest processed output
+    processed_output: str           # Latest AI-generated output
     should_continue: bool           # Continue/terminate flag
+    search_results: str             # Results from psearch integration
 ```
 
 ### Workflow Flow
@@ -98,30 +128,36 @@ class WorkflowState(TypedDict):
 ```mermaid
 graph TD
     A[START] --> B[Input Node]
-    B --> C[Processing Node]
-    C --> D[Decision Node]
-    D --> E{Should Continue?}
-    E -->|Yes| F[Continuation Node]
-    E -->|No| G[END]
-    F --> B
+    B --> C[Search Node]
+    C --> D[Processing Node<br/>Ollama gpt-oss:20b]
+    D --> E[Decision Node]
+    E --> F{Should Continue?}
+    F -->|Yes| G[Continuation Node]
+    F -->|No| H[END]
+    G --> B
 ```
 
 ## 🎯 Key Concepts Demonstrated
 
 - **StateGraph**: LangGraph's core workflow orchestration
+- **AI Integration**: Ollama local LLM integration with gpt-oss:20b
+- **Real-time Search**: `psearch` integration with streaming output
 - **Conditional Edges**: Dynamic routing based on state conditions
-- **Message Management**: Conversation-style state persistence
-- **Iterative Processing**: Loop-based workflow execution
+- **Message Management**: Conversation-style state persistence with AI responses
+- **Iterative Processing**: Loop-based workflow execution with AI feedback
 - **Type Safety**: Python typing for robust state management
+- **Progress Visualization**: Real-time display of search and processing status
 
 ## 🔧 Customization
 
 To extend this workflow:
 
-1. **Add New Nodes**: Implement additional processing steps
-2. **Modify Decision Logic**: Change termination conditions
-3. **Enhanced State**: Add new fields to WorkflowState
-4. **Integration**: Connect to external APIs or LLMs
+1. **Add New Nodes**: Implement additional processing steps (e.g., data analysis, file processing)
+2. **Modify AI Model**: Switch to different Ollama models or adjust parameters
+3. **Enhanced Search**: Customize `psearch` parameters or integrate other search tools
+4. **Language Customization**: Modify system prompts for different languages or domains
+5. **Enhanced State**: Add new fields to WorkflowState for additional context
+6. **Integration**: Connect to external APIs, databases, or other AI services
 
 ## 📚 Based on Research
 
@@ -137,8 +173,14 @@ This implementation incorporates patterns and best practices found through paral
 - `langgraph>=0.6.6`: Core workflow orchestration
 - `langchain>=0.3.27`: Message types and base classes
 - `langchain-community>=0.3.29`: Extended functionality
-- `langchain-openai>=0.3.32`: OpenAI integration (optional)
+- `langchain-ollama>=0.4.32`: Ollama integration for local LLM
 - `python-dotenv>=1.1.1`: Environment configuration
+- `requests>=2.32.3`: HTTP requests for Ollama API checking
+
+### External Tools
+- **Ollama**: Local LLM runtime (`https://ollama.com/`)
+- **gpt-oss:20b**: Open-source GPT model via Ollama
+- **psearch**: Parallel search tool for information retrieval
 
 ## 📄 License
 
