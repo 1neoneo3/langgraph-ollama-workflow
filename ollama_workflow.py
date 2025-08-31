@@ -35,10 +35,14 @@ def search_node(state: WorkflowState) -> WorkflowState:
     try:
         import subprocess
         import sys
+        import time
 
         # Use psearch to search for relevant information
         # Format the query for better search results
         search_query = user_input[:100]  # Limit query length
+        
+        # Record start time
+        start_time = time.time()
 
         # Run psearch command with real-time output streaming
         process = subprocess.Popen(
@@ -72,8 +76,12 @@ def search_node(state: WorkflowState) -> WorkflowState:
 
         # Wait for process to complete
         return_code = process.wait()
+        
+        # Calculate elapsed time
+        elapsed_time = time.time() - start_time
 
         print("-" * 40)
+        print(f"⏱️ Search completed in {elapsed_time:.2f} seconds")
 
         if return_code == 0:
             search_output = "".join(stdout_lines)
