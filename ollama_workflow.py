@@ -18,6 +18,100 @@ class WorkflowState(TypedDict):
     user_input: str
     processed_output: str
     should_continue: bool
+    search_results: str
+
+
+def search_node(state: WorkflowState) -> WorkflowState:
+    """Search for relevant information using psearch with real-time output."""
+    user_input = state.get("user_input", "")
+
+    if not user_input:
+        return {**state, "search_results": ""}
+
+    print(f"🔍 Searching for information about: {user_input}")
+    print("📊 Progress visualization:")
+    print("-" * 40)
+
+    try:
+        import subprocess
+        import sys
+
+        # Use psearch to search for relevant information
+        # Format the query for better search results
+        search_query = user_input[:100]  # Limit query length
+
+        # Run psearch command with real-time output streaming
+        process = subprocess.Popen(
+            ["psearch", "search", search_query, "-n", "5", "-c", "--json"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,  # Line buffering
+            universal_newlines=True,
+        )
+
+        # Collect output while displaying progress
+        stdout_lines = []
+        stderr_lines = []
+
+        # Read stdout line by line for real-time display
+        while True:
+            output = process.stdout.readline()
+            if output == "" and process.poll() is not None:
+                break
+            if output:
+                # Display the line immediately for progress visualization
+                print(f"📤 {output.rstrip()}")
+                sys.stdout.flush()  # Force immediate output
+                stdout_lines.append(output)
+
+        # Get any remaining stderr
+        stderr_output = process.stderr.read()
+        if stderr_output:
+            stderr_lines.append(stderr_output)
+
+        # Wait for process to complete
+        return_code = process.wait()
+
+        print("-" * 40)
+
+        if return_code == 0:
+            search_output = "".join(stdout_lines)
+            print("✅ Search completed successfully")
+            print(
+                f"📄 Found {len(search_output.split('---')) - 1 if '---' in search_output else 'some'} results"
+            )
+
+            # Summarize search results for LLM processing
+            search_summary = (
+                f"Search results for '{user_input}':\n\n{search_output[:2000]}..."
+            )
+
+            return {
+                **state,
+                "search_results": search_summary,
+            }
+        else:
+            stderr_output = "".join(stderr_lines)
+            print(f"⚠️ Search failed with return code {return_code}")
+            print(f"Error: {stderr_output}")
+            return {
+                **state,
+                "search_results": f"Search failed: {stderr_output}",
+            }
+
+    except FileNotFoundError:
+        print("❌ psearch command not found")
+        return {
+            **state,
+            "search_results": "psearch command not available",
+        }
+    except Exception as e:
+        print(f"❌ Search error: {e}")
+        return {
+            **state,
+            "search_results": f"Search error: {str(e)}",
+        }
 
 
 def input_node(state: WorkflowState) -> WorkflowState:
@@ -37,9 +131,10 @@ def input_node(state: WorkflowState) -> WorkflowState:
 
 
 def processing_node(state: WorkflowState) -> WorkflowState:
-    """Process the user input using Ollama gpt-oss:20b model."""
+    """Process the user input using Ollama gpt-oss:20b model with search results."""
     messages = state["messages"]
     iteration = state["iteration"]
+    search_results = state.get("search_results", "")
 
     if not messages:
         return state
@@ -59,13 +154,19 @@ def processing_node(state: WorkflowState) -> WorkflowState:
         if isinstance(last_message, HumanMessage):
             content = last_message.content
 
-            # Create a system prompt for better responses
+            # Create a system prompt that includes search results
             system_prompt = f"""
-            You are an AI assistant processing iteration {iteration} of a LangGraph workflow.
-            Please provide a thoughtful response to the user's input.
-            Keep your response concise but informative.
+            あなたはLangGraphワークフローの{iteration}回目の処理を行うAIアシスタントです。
+            最新の検索結果にアクセスして、正確で最新の情報を提供することができます。
+            ユーザーの入力に対して、必要に応じて検索結果から関連情報を取り入れた、思慮深い回答を日本語で提供してください。
+            簡潔でありながら、情報量豊富な回答を心がけてください。
             
-            User input: {content}
+            ユーザーの入力: {content}
+            
+            検索結果 (利用可能な場合):
+            {search_results if search_results else "検索結果がありません"}
+            
+            検索結果を活用して、最新で正確な情報を含めた日本語での回答をお願いします。
             """
 
             # Get response from Ollama
@@ -143,13 +244,15 @@ def create_workflow() -> StateGraph:
 
     # Add nodes to the workflow
     workflow.add_node("input", input_node)
+    workflow.add_node("search", search_node)
     workflow.add_node("process", processing_node)
     workflow.add_node("decision", decision_node)
     workflow.add_node("continue", continuation_node)
 
     # Define the workflow edges
     workflow.add_edge(START, "input")
-    workflow.add_edge("input", "process")
+    workflow.add_edge("input", "search")
+    workflow.add_edge("search", "process")
     workflow.add_edge("process", "decision")
 
     # Conditional routing function
@@ -224,7 +327,7 @@ def main():
     # Get user input
     print("💬 Please enter your question:")
     user_question = input("❓ ")
-    
+
     if not user_question.strip():
         user_question = "Explain the concept of LangGraph workflows and their benefits for AI applications"
         print(f"🔄 Using default question: {user_question}")
@@ -242,9 +345,10 @@ def main():
         "user_input": user_question,
         "processed_output": "",
         "should_continue": True,
+        "search_results": "",
     }
 
-    print(f"\n📋 Initial State:")
+    print("\n📋 Initial State:")
     print(f"  User Input: {initial_state['user_input']}")
     print(f"  Iteration: {initial_state['iteration']}")
     print()
