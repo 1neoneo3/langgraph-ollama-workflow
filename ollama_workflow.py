@@ -16,6 +16,7 @@ class WorkflowState(TypedDict):
     messages: list[BaseMessage]
     iteration: int
     user_input: str
+    original_user_input: str  # Store original question for iterations
     processed_output: str
     should_continue: bool
     search_results: str
@@ -176,6 +177,9 @@ def input_node(state: WorkflowState) -> WorkflowState:
         "messages": messages,
         "iteration": state.get("iteration", 0) + 1,
         "recent_search_mode": recent_search_mode,
+        "original_user_input": state.get(
+            "original_user_input", user_input
+        ),  # Store original on first iteration
     }
 
 
@@ -271,12 +275,20 @@ def decision_node(state: WorkflowState) -> WorkflowState:
 
 
 def continuation_node(state: WorkflowState) -> WorkflowState:
-    """Continue processing if needed."""
+    """Continue processing with original context preserved."""
     messages = state["messages"]
     iteration = state["iteration"]
+    original_question = state.get("original_user_input", "")
 
-    # Add a continuation message that gives the LLM more context
-    continuation_message = f"Please elaborate or provide additional insights based on your previous response. This is continuation {iteration}."
+    # Create a context-aware continuation message that references the original question
+    continuation_message = f"""元の質問「{original_question}」について、これまでの回答を踏まえて、以下の点で更に詳しく説明してください：
+
+• より具体的な実践例
+• 詳細な手順やプロセス
+• 関連する最新の動向
+• 注意点や考慮事項
+
+これは{iteration}回目の詳細化です。"""
 
     return {
         **state,
@@ -392,6 +404,7 @@ def main():
         "messages": [],
         "iteration": 0,
         "user_input": user_question,
+        "original_user_input": user_question,  # Store original question
         "processed_output": "",
         "should_continue": True,
         "search_results": "",
