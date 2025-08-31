@@ -6,8 +6,6 @@ from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langchain_ollama import ChatOllama
 from typing_extensions import TypedDict
-import asyncio
-import os
 import datetime
 from pathlib import Path
 
@@ -324,17 +322,17 @@ def review_node(state: WorkflowState) -> WorkflowState:
     """Use Claude Code SDK to review and correct the final output."""
     processed_output = state.get("processed_output", "")
     original_question = state.get("original_user_input", "")
-    
+
     if not processed_output:
         print("⚠️ No output to review")
         return {**state, "reviewed_output": ""}
-    
+
     print("🔍 Reviewing output with Claude Code SDK...")
-    
+
     try:
         # Try importing Claude Code SDK
         from claude_code_sdk import query, ClaudeCodeOptions
-        
+
         # Create review prompt
         review_prompt = f"""
 以下は「{original_question}」という質問に対するAIの回答です。
@@ -360,42 +358,45 @@ def review_node(state: WorkflowState) -> WorkflowState:
         options = ClaudeCodeOptions(
             system_prompt="あなたは技術文書の校正・レビューの専門家です。正確性と最新性を重視してレビューを行ってください。",
             max_turns=1,
-            allowed_tools=["WebSearch"]  # Allow web search for fact checking
+            allowed_tools=["WebSearch"],  # Allow web search for fact checking
         )
-        
+
         reviewed_content = ""
-        
+
         # Query Claude Code SDK using asyncio
         async def get_review():
             content = ""
             async for message in query(prompt=review_prompt, options=options):
-                if hasattr(message, 'content'):
+                if hasattr(message, "content"):
                     if isinstance(message.content, list):
                         for block in message.content:
-                            if hasattr(block, 'text'):
+                            if hasattr(block, "text"):
                                 content += block.text
                     else:
                         content += str(message.content)
             return content
-        
+
         # Run async function
         import asyncio
+
         try:
             reviewed_content = asyncio.run(get_review())
         except Exception as async_error:
             print(f"❌ Async execution error: {async_error}")
-            reviewed_content = f"非同期実行エラー: {async_error}\n\n元の回答:\n{processed_output}"
-        
+            reviewed_content = (
+                f"非同期実行エラー: {async_error}\n\n元の回答:\n{processed_output}"
+            )
+
         print("✅ Review completed with Claude Code SDK")
         print("-" * 60)
         print(reviewed_content)
         print("-" * 60)
-        
+
         return {
             **state,
             "reviewed_output": reviewed_content,
         }
-        
+
     except ImportError:
         print("❌ Claude Code SDK not available, skipping review")
         return {
@@ -416,22 +417,32 @@ def documentation_node(state: WorkflowState) -> WorkflowState:
     initial_output = state.get("initial_output", "")
     reviewed_output = state.get("reviewed_output", "")
     search_results = state.get("search_results", "")
-    
+
     print("📝 Generating documentation...")
-    
+
     try:
         # Create docs directory if it doesn't exist
         docs_dir = Path.home() / "workspace" / "Docs"
         docs_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Create a descriptive title from the original question
-        question_summary = original_question[:30].replace("/", "").replace("\\", "").replace(":", "：").replace("?", "？").replace("*", "").replace("<", "").replace(">", "").replace("|", "")
+        question_summary = (
+            original_question[:30]
+            .replace("/", "")
+            .replace("\\", "")
+            .replace(":", "：")
+            .replace("?", "？")
+            .replace("*", "")
+            .replace("<", "")
+            .replace(">", "")
+            .replace("|", "")
+        )
         if len(original_question) > 30:
             question_summary += "..."
-        
+
         filename = f"{question_summary}_分析結果.md"
         file_path = docs_dir / filename
-        
+
         # Generate markdown content
         markdown_content = f"""# LangGraphワークフロー実行結果
 
@@ -470,18 +481,18 @@ def documentation_node(state: WorkflowState) -> WorkflowState:
 ---
 *このドキュメントは LangGraph + Claude Code SDK ワークフローにより自動生成されました*
 """
-        
+
         # Write to file
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(markdown_content)
-        
+
         print(f"✅ Documentation generated: {file_path}")
-        
+
         return {
             **state,
             "document_generated": True,
         }
-        
+
     except Exception as e:
         print(f"❌ Error generating documentation: {e}")
         return {
@@ -528,7 +539,7 @@ def create_workflow() -> StateGraph:
 
     # Edge from continue back to input for loop
     workflow.add_edge("continue", "input")
-    
+
     # New edges for review and documentation
     workflow.add_edge("review", "document")
     workflow.add_edge("document", END)
@@ -630,7 +641,9 @@ def main():
         print("📊 Final Results:")
         print(f"  Total Iterations: {final_state['iteration']}")
         print(f"  Message Count: {len(final_state['messages'])}")
-        print(f"  Document Generated: {'✅' if final_state.get('document_generated', False) else '❌'}")
+        print(
+            f"  Document Generated: {'✅' if final_state.get('document_generated', False) else '❌'}"
+        )
         print()
 
         print("💬 Full Conversation History:")
@@ -652,7 +665,7 @@ def main():
             print(final_state["reviewed_output"])
             print("=" * 60)
             print()
-        
+
         # Display documentation status
         if final_state.get("document_generated"):
             print("📝 Documentation successfully generated in Docs/ directory")
