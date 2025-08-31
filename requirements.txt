@@ -1,0 +1,8 @@
+# LangGraph workflow dependencies
+langgraph>=0.6.6
+langchain>=0.3.27
+langchain-community>=0.3.29
+langchain-openai>=0.3.32
+langchain-ollama>=0.3.7
+python-dotenv>=1.1.1
+requests>=2.32.0
