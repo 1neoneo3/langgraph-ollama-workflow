@@ -275,20 +275,27 @@ def decision_node(state: WorkflowState) -> WorkflowState:
 
 
 def continuation_node(state: WorkflowState) -> WorkflowState:
-    """Continue processing with original context preserved."""
+    """Continue processing with original context and previous response preserved."""
     messages = state["messages"]
     iteration = state["iteration"]
     original_question = state.get("original_user_input", "")
+    previous_output = state.get("processed_output", "")
 
-    # Create a context-aware continuation message that references the original question
-    continuation_message = f"""元の質問「{original_question}」について、これまでの回答を踏まえて、以下の点で更に詳しく説明してください：
+    # Create a context-aware continuation message that includes previous response
+    continuation_message = f"""元の質問「{original_question}」について、以下が前回の回答です：
 
-• より具体的な実践例
+【前回の回答】
+{previous_output}
+
+この前回の回答を踏まえて、以下の点で更に詳しく掘り下げて説明してください：
+
+• より具体的な実践例や事例
 • 詳細な手順やプロセス
-• 関連する最新の動向
-• 注意点や考慮事項
+• 関連する最新の動向や発展
+• 注意点、課題、考慮事項
+• 実装時のベストプラクティス
 
-これは{iteration}回目の詳細化です。"""
+これは{iteration}回目の詳細化です。前回の内容と重複しないよう、新しい角度からの情報を提供してください。"""
 
     return {
         **state,
