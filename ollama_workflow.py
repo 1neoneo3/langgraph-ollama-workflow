@@ -19,16 +19,19 @@ class WorkflowState(TypedDict):
     processed_output: str
     should_continue: bool
     search_results: str
+    recent_search_mode: bool
 
 
 def search_node(state: WorkflowState) -> WorkflowState:
     """Search for relevant information using psearch with real-time output."""
     user_input = state.get("user_input", "")
+    recent_search_mode = state.get("recent_search_mode", False)
 
     if not user_input:
         return {**state, "search_results": ""}
 
-    print(f"🔍 Searching for information about: {user_input}")
+    search_mode_text = " (limited to past 2 months)" if recent_search_mode else ""
+    print(f"🔍 Searching for information about: {user_input}{search_mode_text}")
     print("📊 Progress visualization:")
     print("-" * 40)
 
@@ -40,13 +43,21 @@ def search_node(state: WorkflowState) -> WorkflowState:
         # Use psearch to search for relevant information
         # Format the query for better search results
         search_query = user_input[:100]  # Limit query length
-        
+
         # Record start time
         start_time = time.time()
 
+        # Build psearch command with optional date filtering
+        psearch_cmd = ["psearch", "search", search_query, "-n", "5", "-c", "--json"]
+
+        # Add date filter for recent search mode (past 2 months)
+        if recent_search_mode:
+            psearch_cmd.extend(["-r", "--months", "2", "-s"])
+            print("📅 Filtering results: recent only (past 2 months), sorted by date")
+
         # Run psearch command with real-time output streaming
         process = subprocess.Popen(
-            ["psearch", "search", search_query, "-n", "5", "-c", "--json"],
+            psearch_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -76,7 +87,7 @@ def search_node(state: WorkflowState) -> WorkflowState:
 
         # Wait for process to complete
         return_code = process.wait()
-        
+
         # Calculate elapsed time
         elapsed_time = time.time() - start_time
 
@@ -123,7 +134,7 @@ def search_node(state: WorkflowState) -> WorkflowState:
 
 
 def input_node(state: WorkflowState) -> WorkflowState:
-    """Process initial user input."""
+    """Process initial user input and detect recent search keywords."""
     user_input = state.get("user_input", "")
     messages = state.get("messages", [])
 
@@ -131,10 +142,40 @@ def input_node(state: WorkflowState) -> WorkflowState:
     if user_input:
         messages.append(HumanMessage(content=user_input))
 
+    # Check for keywords that indicate user wants recent information
+    recent_keywords = [
+        "最新",
+        "直近",
+        "最近",
+        "新しい",
+        "今日",
+        "今週",
+        "今月",
+        "latest",
+        "recent",
+        "new",
+        "current",
+        "today",
+        "this week",
+        "this month",
+        "2024年",
+        "2025年",
+        "今年",
+        "this year",
+    ]
+
+    recent_search_mode = any(keyword in user_input for keyword in recent_keywords)
+
+    if recent_search_mode:
+        print(
+            "🔍 Recent information keywords detected - search will be limited to past 2 months"
+        )
+
     return {
         **state,
         "messages": messages,
         "iteration": state.get("iteration", 0) + 1,
+        "recent_search_mode": recent_search_mode,
     }
 
 
@@ -354,6 +395,7 @@ def main():
         "processed_output": "",
         "should_continue": True,
         "search_results": "",
+        "recent_search_mode": False,
     }
 
     print("\n📋 Initial State:")
