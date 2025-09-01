@@ -37,8 +37,8 @@ def extract_corrected_version(reviewed_output: str) -> str:
         r"修正版[：:]\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
         r"修正[：:]\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
         r"改善版[：:]\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
-        r"以下が修正版です[：:]?\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
-        r"修正後[：:]?\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
+        r"以下が修正版です[：:]*\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
+        r"修正後[：:]*\s*\n(.+?)(?=\n\n##|\n\n---|\Z)",
     ]
 
     for pattern in corrected_patterns:
@@ -52,7 +52,7 @@ def extract_corrected_version(reviewed_output: str) -> str:
     improvement_patterns = [
         r"## レビュー結果.*?## 修正内容.*?\n(.+?)(?=\n## |$)",
         r"### 修正内容\s*\n(.+?)(?=\n### |$)",
-        r"**修正版**\s*\n(.+?)(?=\n**|$)",
+        r"\*\*修正版\*\*\s*\n(.+?)(?=\n\*\*|$)",
         r"\*\*修正版\*\*\s*\n(.+?)(?=\n\*\*|$)",
     ]
 

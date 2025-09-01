@@ -4,10 +4,12 @@ import os
 from langgraph.graph import StateGraph, START, END
 
 from .core.state import WorkflowState
+from .config.langfuse_config import conditional_observe
 from .nodes import (
     input_node,
     generate_search_queries,
     parallel_search_node,
+    search_node,
     processing_node,
     review_node,
     documentation_node,
@@ -23,8 +25,7 @@ def create_workflow() -> StateGraph:
 
     # Add nodes to the workflow
     workflow.add_node("input", input_node)
-    workflow.add_node("query_generation", generate_search_queries)
-    workflow.add_node("parallel_search", parallel_search_node)
+    workflow.add_node("search", search_node)
     workflow.add_node("process", processing_node)
     workflow.add_node("review", review_node)
     workflow.add_node("document", documentation_node)
@@ -36,9 +37,8 @@ def create_workflow() -> StateGraph:
 
     # Define the workflow edges with conditional Slack notification
     workflow.add_edge(START, "input")
-    workflow.add_edge("input", "query_generation")
-    workflow.add_edge("query_generation", "parallel_search")
-    workflow.add_edge("parallel_search", "process")
+    workflow.add_edge("input", "search")
+    workflow.add_edge("search", "process")
     workflow.add_edge("process", "review")
     workflow.add_edge("review", "document")
 
@@ -76,6 +76,7 @@ def create_initial_state(user_question: str) -> WorkflowState:
     }
 
 
+@conditional_observe(name="run_workflow")
 def run_workflow(user_question: str = None) -> WorkflowState:
     """Run the complete workflow with the given user question."""
     print("🚀 Starting LangGraph Workflow with Ollama gpt-oss:20b")

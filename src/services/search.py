@@ -167,3 +167,21 @@ def generate_search_queries_fallback(user_input: str) -> List[str]:
         f"{user_input} 最新",  # Latest info query
         f"{user_input} 実装方法",  # Implementation query
     ]
+
+
+def perform_search(query: str, recent_search_mode: bool = False, days_limit: int = 60) -> str:
+    """Perform a single search operation using psearch."""
+    try:
+        # Build psearch command using existing helper
+        psearch_cmd = build_psearch_command(query, recent_search_mode, days_limit)
+        
+        # Execute search with progress
+        result = execute_psearch_with_progress(psearch_cmd)
+        
+        if result["success"]:
+            return result["stdout"]
+        else:
+            return f"Search failed: {result['stderr']}"
+            
+    except Exception as e:
+        return f"Search error: {str(e)}"

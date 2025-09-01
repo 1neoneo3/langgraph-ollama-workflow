@@ -3,12 +3,14 @@
 from langchain_core.messages import HumanMessage, AIMessage
 
 from ..config.settings import Config
+from ..config.langfuse_config import conditional_observe
 from ..core.state import WorkflowState
 from ..services.llm import create_ollama_llm, handle_ollama_fallback
 from ..utils.datetime_utils import get_current_datetime_info
 from ..utils.helpers import create_system_prompt
 
 
+@conditional_observe(name="processing_node")
 def processing_node(state: WorkflowState) -> WorkflowState:
     """Process the user input using Ollama gpt-oss:20b model with search results."""
     messages = state["messages"]

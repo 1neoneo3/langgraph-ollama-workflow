@@ -6,8 +6,10 @@ from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langchain_ollama import ChatOllama
 
 from ..config.settings import Config
+from ..config.langfuse_config import conditional_observe
 
 
+@conditional_observe(name="create_ollama_llm")
 def create_ollama_llm():
     """Create and return configured Ollama LLM instance."""
     return ChatOllama(
@@ -17,6 +19,7 @@ def create_ollama_llm():
     )
 
 
+@conditional_observe(name="handle_ollama_fallback")
 def handle_ollama_fallback(messages: List[BaseMessage], iteration: int) -> Dict[str, any]:
     """Handle Ollama fallback when service is unavailable."""
     if messages and isinstance(messages[-1], HumanMessage):
@@ -33,6 +36,7 @@ def handle_ollama_fallback(messages: List[BaseMessage], iteration: int) -> Dict[
     return {"messages": messages}
 
 
+@conditional_observe(name="check_ollama_connection")
 def check_ollama_connection() -> bool:
     """Check if Ollama is running and the configured model is available."""
     try:
