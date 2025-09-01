@@ -390,11 +390,7 @@ def review_node(state: WorkflowState) -> WorkflowState:
         # Create detailed system prompt that includes the original answer to review
         detailed_system_prompt = f"""あなたは技術文書の校正・レビューの専門家です。
 
-【重要な指示】
-- すべての出力とドキュメント内容は日本語で記述してください
-- 現在日時: {current_date_str} ({current_year}年)
-- 最新情報（{current_year - 1}年以降）を優先して参照してください
-- Claude Code SDKを使用する際は必ず現在日時を考慮して最新の情報を取得してください
+上記の回答内容について、詳細なレビューを行い、その後にレビューを反映した修正版を作成してください。
 
 【レビュー対象の回答内容】
 {processed_output}
@@ -402,38 +398,60 @@ def review_node(state: WorkflowState) -> WorkflowState:
 【元の質問】
 {original_question}
 
-上記の回答内容について、以下の点で詳細なレビューを行ってください：
+【重要な指示】
+- 必ず日本語でレビューと修正版を作成してください
+- すべての出力は日本語で記述してください 
+- WebSearchツールを使用する場合も、結果は日本語でまとめてください
+- 現在日時: {current_date_str} ({current_year}年)
+- 最新情報（{current_year - 1}年以降）を優先して参照してください
 
-**一般的なレビューポイント：**
+【個別の指示】
+- レビュー対象の文章をもとに、必ず「詳細なレビュー」と「修正版」の両方を作成してください
+- レビューで指摘した内容は修正版にすべて反映してください
+- すべての出力とドキュメント内容は日本語で記述してください
+
+---
+
+## レビューポイント
+
+### 1. 一般的なポイント
 1. 事実の正確性（間違いや古い情報がないか、特に{current_year - 1}年以降の最新情報との整合性）
-2. 論理的な一貫性（矛盾する内容がないか）
+2. 論理的な一貫性（矛盾がないか）
 3. 完全性（重要な情報が抜けていないか）
-4. わかりやすさ（説明が明確で理解しやすいか）
+4. わかりやすさ（説明が明確か）
 5. 最新性（{current_year}年の最新情報に基づいているか）
 
-**技術的な質問の場合の追加レビューポイント：**
-質問が技術的な内容の場合は、context7 MCPツールを積極的に使用して公式ドキュメントや最新の技術情報を参照し、以下の点も確認してください：
-- 技術的正確性（コードの構文、APIの使用方法、{current_year}年時点での最新仕様）
-- ベストプラクティス準拠（業界標準に従っているか、最新のベストプラクティス）
-- セキュリティ（セキュリティ上の問題やリスクがないか、最新のセキュリティガイドライン）
-- パフォーマンス（効率的で最適化されたアプローチか、最新の最適化手法）
-- 公式ドキュメントとの整合性（{current_year}年の最新ドキュメントとの比較）
-- 実装時の注意点や落とし穴（最新バージョンでの変更点を含む）
+### 2. 技術的質問の場合の追加ポイント
+- 技術的正確性（コード構文、APIの使用方法、{current_year}年時点での最新仕様）
+- ベストプラクティス準拠（業界標準に従っているか）
+- セキュリティ（リスクや問題がないか）
+- パフォーマンス（効率的で最適化されているか）
+- 公式ドキュメントとの整合性（{current_year}年の最新ドキュメントに基づくか）
+- 実装上の注意点や落とし穴（最新バージョンの変更点を含む）
 
-**最新情報確認の要求事項：**
-- WebSearchツールを使用して{current_year}年の最新情報を確認してください
-- 古い情報（{current_year - 2}年以前）の場合は最新情報で補完してください
-- バージョンアップやAPI変更などの最新動向を反映してください
+### 3. 最新情報確認
+- WebSearchツールを使用して{current_year}年の最新情報を確認すること
+- 古い情報（{current_year - 2}年以前）は最新情報で補完すること
+- バージョンアップやAPI変更など最新動向を反映すること
+- WebSearchの結果は必ず日本語でまとめること
 
-**レビュー出力の要求事項（すべて日本語で出力）：**
-- レビュー内容は省略せず、完全な形で日本語で提供してください
-- 修正が必要な場合は、具体的な修正版を日本語で完全に提供してください
-- 修正点と理由を詳細に日本語で説明してください
-- 技術的な詳細や重要な情報は省略せず、すべて日本語で記述してください
-- 長い内容であってもすべて日本語で含めて回答してください
-- 最新情報（{current_year}年）に基づく更新点があれば明示してください
+---
 
-問題がない場合は「レビュー完了：問題なし（{current_date_str}時点）」と日本語で回答してください。"""
+## 出力形式（必ず日本語で記述）
+
+1. **詳細なレビュー**（箇条書き・具体的に、日本語で省略せず）
+2. **修正版文章**（レビュー内容を完全に反映した修正版、日本語で完全に書く）
+3. **修正点の説明**（レビュー内容に沿って何をどう修正したか、日本語で詳細に）
+4. 問題がなければ「レビュー完了：問題なし（{current_date_str}時点）」と記述
+
+---
+
+【最重要】
+- すべての出力は日本語で記述してください
+- WebSearchの結果や引用も日本語でまとめてください
+- 英語のテキストは含めないでください
+- レビューと修正版は必ずセットで日本語で生成してください
+- 技術的な情報は省略せず、最新情報（{current_year}年）に基づく更新点を明示してください"""
 
         options = ClaudeCodeOptions(
             system_prompt=detailed_system_prompt,
@@ -459,8 +477,8 @@ def review_node(state: WorkflowState) -> WorkflowState:
             content = ""
             message_count = 0
             
-            # Simple prompt since all review details are in system prompt
-            simple_prompt = "上記の回答内容をレビューしてください。"
+            # Simple prompt since all review details are in system prompt - emphasize Japanese output
+            simple_prompt = "上記の回答内容を日本語で詳細にレビューしてください。すべての出力は必ず日本語で記述してください。"
             
             print("📡 Sending prompt to Claude Code SDK...")
             print(f"📏 Prompt length: {len(simple_prompt)} characters")
@@ -488,14 +506,14 @@ def review_node(state: WorkflowState) -> WorkflowState:
                                         tool_input = getattr(block, 'input', {})
                                         print(f"🔧 ToolUseBlock - Tool: {tool_name}")
                                         print(f"📥 Tool input: {str(tool_input)[:200]}...")
-                                        # Add tool use information to content for context
+                                        # Add tool use information to content for context in Japanese
                                         content += f"\n[ツール使用: {tool_name}]\n"
                                     elif isinstance(block, ToolResultBlock):
                                         tool_result = getattr(block, 'content', 'no result')
                                         tool_result_str = str(tool_result)
                                         print(f"📤 ToolResultBlock - Result length: {len(tool_result_str)} characters")
                                         print(f"🔍 Tool result preview: {tool_result_str[:200]}...")
-                                        # Add complete tool result to content without truncation
+                                        # Add complete tool result to content without truncation in Japanese
                                         content += f"\n[ツール結果: {tool_result_str}]\n"
                                     else:
                                         print(f"❓ Unknown block type: {type(block)}")
@@ -696,25 +714,6 @@ def documentation_node(state: WorkflowState) -> WorkflowState:
 - 完全性の向上
 ''' if final_corrected_version and final_corrected_version != reviewed_output else ""}
 
-## 比較分析
-
-### ワークフローの流れ
-1. **検索**: 最新情報の収集
-2. **初回生成**: Ollama gpt-oss:20bによる初期回答
-3. **レビュー**: Claude Code + context7 MCPによる技術的検証
-4. **修正**: 事実確認と技術的正確性の向上
-
-### 改善点
-- Claude Codeによる事実確認と修正
-- context7 MCPツールによる最新技術情報の参照
-- より正確で最新の情報の提供
-- 論理的一貫性の向上
-
-### 学習ポイント
-- 複数のAIシステムを連携させることで回答品質が向上
-- 外部検索との組み合わせで最新情報を取得
-- レビュープロセスにより信頼性が向上
-- MCPツールの活用で技術的正確性が確保
 
 ---
 *このドキュメントは LangGraph + Claude Code SDK ワークフローにより自動生成されました*
@@ -897,7 +896,7 @@ def parallel_search_node(state: WorkflowState) -> WorkflowState:
                 psearch_cmd,
                 capture_output=True,
                 text=True,
-                timeout=30  # 30 second timeout per search
+                timeout=120  # 120 second timeout per search
             )
             
             elapsed_time = time.time() - start_time
@@ -925,7 +924,7 @@ def parallel_search_node(state: WorkflowState) -> WorkflowState:
                 "query": query,
                 "results": "Search timed out",
                 "success": False,
-                "elapsed_time": 30
+                "elapsed_time": 120
             }
         except Exception as e:
             print(f"❌ Search {query_index + 1} error: {e}")
@@ -978,7 +977,86 @@ def parallel_search_node(state: WorkflowState) -> WorkflowState:
     print(f"  ❌ Failed: {len(failed_searches)}")
     print(f"  ⏱️ Total time: {total_elapsed_time:.2f}s")
     
-    # Create combined search results
+    # If all searches failed, use WebSearch as fallback
+    if len(successful_searches) == 0:
+        print("🔄 All parallel searches failed - falling back to Claude Code WebSearch")
+        
+        try:
+            # Import WebSearch functionality
+            from claude_code_sdk import query, ClaudeCodeOptions
+            
+            # Use the first query as the main search term
+            main_query = search_queries[0] if search_queries else state.get("user_input", "")
+            
+            print(f"🌐 Using WebSearch fallback for: {main_query}")
+            
+            # Configure Claude Code options for web search
+            websearch_prompt = f"""以下のクエリについて、WebSearchツールを使用して最新の情報を検索し、検索結果をまとめてください：
+
+クエリ: {main_query}
+
+要求事項:
+- 最新の情報を検索してください
+- 複数のソースから情報を収集してください
+- 検索結果を日本語でまとめてください
+- 信頼できる情報源を優先してください"""
+
+            options = ClaudeCodeOptions(
+                system_prompt="あなたは情報検索の専門家です。WebSearchツールを使用して、与えられたクエリに関する最新で正確な情報を検索し、結果をまとめてください。",
+                max_turns=3,
+                allowed_tools=["WebSearch"]
+            )
+            
+            async def get_websearch_results():
+                content = ""
+                async for message in query(prompt=websearch_prompt, options=options):
+                    if hasattr(message, "content"):
+                        if isinstance(message.content, list):
+                            for block in message.content:
+                                if hasattr(block, "text"):
+                                    content += block.text
+                        else:
+                            content += str(message.content)
+                return content
+            
+            # Run async function
+            import asyncio
+            websearch_results = asyncio.run(get_websearch_results())
+            
+            print("✅ WebSearch fallback completed")
+            print(f"📄 WebSearch results length: {len(websearch_results)} characters")
+            
+            # Create fallback results
+            combined_results = f"WebSearch Fallback Results (all parallel searches failed):\n\n"
+            combined_results += f"🌐 WebSearch Query: {main_query}\n"
+            combined_results += f"⏱️ Fallback execution time: {total_elapsed_time:.2f}s\n"
+            combined_results += f"📊 Results:\n{websearch_results}\n"
+            combined_results += "-" * 50 + "\n\n"
+            combined_results += "Original parallel search failures:\n"
+            
+            for i, result in enumerate(search_results, 1):
+                combined_results += f"❌ Search {i}: {result['query']} - {result['results']}\n"
+            
+            return {
+                **state,
+                "search_results": combined_results,
+                "parallel_search_stats": {
+                    "total_queries": len(search_queries),
+                    "successful": 0,
+                    "failed": len(failed_searches),
+                    "total_time": total_elapsed_time,
+                    "websearch_fallback": True
+                }
+            }
+            
+        except ImportError:
+            print("❌ Claude Code SDK not available for WebSearch fallback")
+            # Continue with original failed results
+        except Exception as e:
+            print(f"❌ WebSearch fallback failed: {e}")
+            # Continue with original failed results
+    
+    # Create combined search results (original logic)
     combined_results = f"Parallel Search Results ({len(successful_searches)}/{len(search_queries)} successful):\n\n"
     
     for i, result in enumerate(search_results, 1):
