@@ -6,3 +6,6 @@ langchain-openai>=0.3.32
 langchain-ollama>=0.3.7
 python-dotenv>=1.1.1
 requests>=2.32.0
+
+# Claude Code SDK integration
+claude-code-sdk>=0.0.20

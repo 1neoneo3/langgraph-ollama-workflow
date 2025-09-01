@@ -24,6 +24,9 @@ This implementation is based on comprehensive parallel search research conducted
 - **Message History**: Conversation-style message tracking with AI responses
 - **Progress Visualization**: Real-time display of search progress and results
 - **Japanese Language Support**: Native Japanese response generation
+- **🆕 Claude Code SDK Integration**: Automated review and fact-checking using Claude Code SDK
+- **🆕 Documentation Generation**: Automatic markdown documentation with comparison analysis
+- **🆕 Quality Assurance**: Multi-AI system validation for improved output accuracy
 
 ## 🚀 Getting Started
 
@@ -34,6 +37,8 @@ This implementation is based on comprehensive parallel search research conducted
 - Ollama installed and running (`ollama serve`)
 - gpt-oss:20b model installed (`ollama pull gpt-oss:20b`)
 - `psearch` command available for search functionality
+- Claude Code SDK (`pip install claude-code-sdk`)
+- Claude Code CLI (`npm install -g @anthropic-ai/claude-code`)
 
 ### Installation
 
@@ -110,6 +115,8 @@ Expected output:
 3. **Processing Node**: Uses Ollama gpt-oss:20b to generate AI responses with search context
 4. **Decision Node**: Determines whether to continue or terminate workflow
 5. **Continuation Node**: Prepares state for next iteration
+6. **🆕 Review Node**: Uses Claude Code SDK to review and fact-check AI responses
+7. **🆕 Documentation Node**: Generates markdown documentation comparing outputs
 
 ### State Structure
 
@@ -121,6 +128,9 @@ class WorkflowState(TypedDict):
     processed_output: str           # Latest AI-generated output
     should_continue: bool           # Continue/terminate flag
     search_results: str             # Results from psearch integration
+    initial_output: str             # First AI output for comparison
+    reviewed_output: str            # Claude Code reviewed output
+    document_generated: bool        # Document generation status
 ```
 
 ### Workflow Flow
@@ -133,8 +143,10 @@ graph TD
     D --> E[Decision Node]
     E --> F{Should Continue?}
     F -->|Yes| G[Continuation Node]
-    F -->|No| H[END]
+    F -->|No| H[Review Node<br/>Claude Code SDK]
     G --> B
+    H --> I[Documentation Node]
+    I --> J[END]
 ```
 
 ## 🎯 Key Concepts Demonstrated
@@ -147,6 +159,9 @@ graph TD
 - **Iterative Processing**: Loop-based workflow execution with AI feedback
 - **Type Safety**: Python typing for robust state management
 - **Progress Visualization**: Real-time display of search and processing status
+- **🆕 Multi-AI Validation**: Claude Code SDK for automated review and quality assurance
+- **🆕 Documentation Automation**: Automated markdown generation with comparison analysis
+- **🆕 Workflow Enhancement**: Extended node architecture for production-ready AI workflows
 
 ## 🔧 Customization
 
@@ -176,11 +191,14 @@ This implementation incorporates patterns and best practices found through paral
 - `langchain-ollama>=0.4.32`: Ollama integration for local LLM
 - `python-dotenv>=1.1.1`: Environment configuration
 - `requests>=2.32.3`: HTTP requests for Ollama API checking
+- `claude-code-sdk>=0.0.20`: Claude Code SDK integration for AI review
 
 ### External Tools
 - **Ollama**: Local LLM runtime (`https://ollama.com/`)
 - **gpt-oss:20b**: Open-source GPT model via Ollama
 - **psearch**: Parallel search tool for information retrieval
+- **Claude Code**: AI development assistant (`https://claude.ai/code`)
+- **@anthropic-ai/claude-code**: Claude Code CLI for SDK integration
 
 ## 📄 License
 

@@ -54,6 +54,13 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -62,3 +69,12 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Project specific
+config.yaml
+secrets.yaml
