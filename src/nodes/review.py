@@ -41,6 +41,8 @@ def review_node(state: WorkflowState) -> WorkflowState:
             f"🔧 MCP servers configured: {list(options.mcp_servers.keys()) if options.mcp_servers else 'None'}"
         )
         print(f"🛠️ Allowed tools: {options.allowed_tools}")
+        print("\n📊 ツール使用状況の監視を開始します...")
+        print("-" * 60)
 
         print("🔄 Starting async query to Claude Code SDK...")
 

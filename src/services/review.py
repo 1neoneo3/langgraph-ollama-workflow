@@ -24,6 +24,10 @@ def create_claude_code_options(
         options.mcp_servers = {
             "context7": {"command": "npx", "args": ["-y", "@context7/server"]}
         }
+        print("🔌 context7 MCPサーバーを有効化しました")
+        print("   📚 利用可能なツール:")
+        print("      - resolve-library-id: ライブラリIDの解決")
+        print("      - get-library-docs: 公式ドキュメントの取得")
 
     return options
 
@@ -128,16 +132,47 @@ async def execute_claude_code_query(prompt: str, options) -> str:
                                 content += block.text
                             elif isinstance(block, ToolUseBlock):
                                 tool_name = getattr(block, "name", "unknown")
-                                print(f"🔧 ToolUseBlock - Tool: {tool_name}")
-                                content += f"\n[ツール使用: {tool_name}]\n"
+                                tool_input = getattr(block, "input", {})
+                                
+                                # MCPサーバーの検出
+                                mcp_server = "不明"
+                                if "context7" in tool_name.lower():
+                                    mcp_server = "context7"
+                                elif tool_name == "WebSearch":
+                                    mcp_server = "Claude内蔵"
+                                
+                                print(f"🔧 ToolUseBlock 検出:")
+                                print(f"   📌 ツール名: {tool_name}")
+                                print(f"   🖥️ MCPサーバー: {mcp_server}")
+                                print(f"   📥 入力パラメータ: {tool_input}")
+                                
+                                # context7の具体的なツールを識別
+                                if mcp_server == "context7":
+                                    if "resolve-library-id" in str(tool_name):
+                                        print(f"   📚 context7機能: ライブラリID解決")
+                                    elif "get-library-docs" in str(tool_name):
+                                        print(f"   📖 context7機能: ドキュメント取得")
+                                    else:
+                                        print(f"   🔍 context7機能: {tool_name}")
+                                
+                                content += f"\n[ツール使用: {tool_name} (MCP: {mcp_server})]\n"
                             elif isinstance(block, ToolResultBlock):
                                 tool_result = str(
                                     getattr(block, "content", "no result")
                                 )
-                                print(
-                                    f"📤 ToolResultBlock - Result length: {len(tool_result)} characters"
-                                )
-                                content += f"\n[ツール結果: {tool_result}]\n"
+                                tool_use_id = getattr(block, "tool_use_id", "unknown")
+                                is_error = getattr(block, "is_error", False)
+                                
+                                print(f"📤 ToolResultBlock 検出:")
+                                print(f"   🆔 ツール使用ID: {tool_use_id}")
+                                print(f"   📊 結果サイズ: {len(tool_result)} 文字")
+                                print(f"   ⚠️ エラー: {'はい' if is_error else 'いいえ'}")
+                                
+                                # 結果の一部を表示（最初の200文字）
+                                preview = tool_result[:200] + "..." if len(tool_result) > 200 else tool_result
+                                print(f"   📝 結果プレビュー: {preview}")
+                                
+                                content += f"\n[ツール結果 (ID: {tool_use_id}, サイズ: {len(tool_result)}文字)]\n"
                             else:
                                 if hasattr(block, "text"):
                                     content += block.text
